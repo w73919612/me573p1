@@ -80,22 +80,6 @@ var paletteBoxVertsOn =
         1.0, 1.0, 0.0,   0, 0, 1
     ];
 
-var makeBoundingBoxEdge = function (inSet, factor, color) {
-    var f = factor;
-    var ln = inSet.length;
-
-    for (var i = 0; i < ln; i++) {
-
-        inSet.push(inSet[i] * f);
-        inSet.push(inSet[i + 1] * f);
-        inSet.push(0.01);
-        inSet.push(inSet[i + 3]);
-        inSet.push(inSet[i + 4]);
-        inSet.push(color);
-        i = i + 5;
-        console.log(i);
-    }
-};
 
 
 var orGateVerts =

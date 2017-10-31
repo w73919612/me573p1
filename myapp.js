@@ -16,6 +16,10 @@ const NOTGATE = 3;
 const MAXGATES = 5;
 var gateCount = 0;
 
+var orgates = [];
+
+var onlyPrintOnce = 0;
+
 var selectedTool = {
     mode: SELECT,
     x: 0.0,
@@ -79,27 +83,31 @@ var mousedown = function (canvas, evt) {
 
 
 var mouseup = function (canvas, evt) {
-
     var x = evt.clientX;
     var y = evt.clientY;
 
-    selectedTool = inPalette((x - 300) / 300, (300 - y) / 300);
     if (SELECT) {
         console.log("mode: " + selectedTool.mode +
             "\nx: " + selectedTool.x +
             "\ny: " + selectedTool.y);
-            console.log("LAST    X: " + lastX);
+        console.log("LAST X: " + lastX);
         console.log("HERE A");
+        console.log("mode: " + selectedTool.mode);
         if (selectedTool.mode == ORGATE) {
             console.log("HERE B");
             if (lastX > 108) {
                 console.log("HERE C");
                 if (gateCount < MAXGATES) {
                     console.log("HERE D");
+                    orgates.push({ posx: lastX, posy: lastY });
+                    console.log("gateCount: " + gateCount);
                     gateCount = gateCount + 1;
                 }
             }
         }
+    }
+    for (var k = 0; k < orgates.length; k++) {
+        console.log("GATE X,Y: " + orgates[k].posx + ", " + orgates[k].posy);
     }
 }
 
@@ -107,6 +115,24 @@ function getMousePos(canvas, evt) {
     lastX = evt.clientX;
     lastY = evt.clientY;
 }
+
+
+var addOnFillPaletteBoxVertices = function (inSet, factor, color) {
+    var f = factor;
+    var ln = inSet.length;
+
+    for (var i = 0; i < ln; i++) {
+
+        inSet.push(inSet[i] * f);
+        inSet.push(inSet[i + 1] * f);
+        inSet.push(0.01);
+        inSet.push(inSet[i + 3]);
+        inSet.push(inSet[i + 4]);
+        inSet.push(color);
+        i = i + 5;
+        console.log(i);
+    }
+};
 
 var initDemo = function () {
 
@@ -170,15 +196,8 @@ var initDemo = function () {
         console.log("Bad Validating Program.");
     }
 
-    var identityAllMatrices = function () {
-        mat4.identity(worldMatrix);
-        mat4.identity(scaleMatrix);
-        mat4.identity(translateMatrix);
-        mat4.identity(rotateMatrix);
-    }
-
-    makeBoundingBoxEdge(paletteBoxVertsOn, .95, 1.0);
-    makeBoundingBoxEdge(paletteBoxVertsOff, .95, 0.0);
+    addOnFillPaletteBoxVertices(paletteBoxVertsOn, .95, 1.0);
+    addOnFillPaletteBoxVertices(paletteBoxVertsOff, .95, 0.0);
 
 
     var matWorldUniformLocation = gl.getUniformLocation(program, 'mWorld');
@@ -195,6 +214,14 @@ var initDemo = function () {
     var translateMatrix = new Float32Array(16);
     var rotateMatrix = new Float32Array(16);
 
+
+    var identityAllMatrices = function () {
+        mat4.identity(worldMatrix);
+        mat4.identity(scaleMatrix);
+        mat4.identity(translateMatrix);
+        mat4.identity(rotateMatrix);
+    }
+
     identityAllMatrices();
 
     mat4.lookAt(viewMatrix, [0, 0, 2], [0, 0, 0], [0, 0.01, 0]);
@@ -209,7 +236,7 @@ var initDemo = function () {
     var angle = 0;
 
 
-    var drawTransformDrawBoundingBox = function (multiplier) {
+    var drawTransformedPaletteBox = function (multiplier) {
 
         //angle = performance.now() / 1000 / 6 * 2 * Math.PI;
         angle = 0;
@@ -223,14 +250,36 @@ var initDemo = function () {
     }
 
 
-    var drawOrGate = function (multiplier) {
+    var drawOrGate = function (i) {
 
+
+
+        if (mousepressed) {
+            l_moveX = (lastX - 300) / 300;
+            l_moveY = (300 - lastY) / 300;
+        }
+        else {
+            var l_moveX = (orgates[i].posx - 300.0) / 300.0;
+            var l_moveY = (300 - orgates[i].posy) / 300.0;
+        }
+        //  console.log("HERE K");
+        //  console.log("DRAW GATE X,Y: " + orgates[i].posx + ", " + orgates[i].posy);
         mat4.fromScaling(scaleMatrix, [.7 * bxScale, .6 * bxScale, bxScale]);
-        mat4.fromTranslation(translateMatrix, [moveX, moveY, 0]);
+
+        if (onlyPrintOnce < 1){
+            onlyPrintOnce = onlyPrintOnce + 1;
+            console.log("............................translates X,Y: " + l_moveX + ", " + l_moveY);
+        }
+
+        mat4.fromTranslation(translateMatrix, [l_moveX, l_moveY, 0.0]);
+        //  mat4.fromTranslation(translateMatrix, 0.0, 0.0, 0.0);
+
+
         mat4.scalar.multiply(worldMatrix, rotateMatrix, scaleMatrix);
         mat4.scalar.multiply(worldMatrix, translateMatrix, worldMatrix);
         gl.uniformMatrix4fv(matWorldUniformLocation, gl.FALSE, worldMatrix);
         gl.drawArrays(gl.LINE_STRIP, 0, notGateNumVerts);
+
     }
 
     var doAttribs = function () {
@@ -268,19 +317,22 @@ var initDemo = function () {
         }
 
         doAttribs();
-        drawTransformDrawBoundingBox(6.00 / 6.0);
+        //Draw SELECT PALETTE SQUARE
+        drawTransformedPaletteBox(6.00 / 6.0);
         if (CONNECT) {
             gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(paletteBoxVertsOn), gl.STATIC_DRAW);
         }
         else {
             gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(paletteBoxVertsOff), gl.STATIC_DRAW);
         }
-        drawTransformDrawBoundingBox(4.05 / 6.0);
+        //Draw CONNECT PALETTE SQUARE
+        drawTransformedPaletteBox(4.05 / 6.0);
 
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(paletteBoxVertsOff), gl.STATIC_DRAW);
 
-        drawTransformDrawBoundingBox(2.10 / 6.0);
-        drawTransformDrawBoundingBox(0.15 / 6.0);
+        //Draw OR GATE & NOT GATE PALETTE SQUARES
+        drawTransformedPaletteBox(2.10 / 6.0);
+        drawTransformedPaletteBox(0.15 / 6.0);
 
         //PALETTE : SELECTOR TOOL
         var selectorToolVertexBuffer = gl.createBuffer();
@@ -356,24 +408,25 @@ var initDemo = function () {
         gl.drawArrays(gl.LINE_STRIP, 0, notGateNumVerts);
 
 
-        for (var k = 0; k < gateCount; k++) {
-            var notGateVertexBuffer = gl.createBuffer();
-            gl.bindBuffer(gl.ARRAY_BUFFER, notGateVertexBuffer);
-            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(notGateVerts), gl.STATIC_DRAW);
-
-            doAttribs();
-            identityAllMatrices();
-            drawOrGate();
-
+        doAttribs();
+        identityAllMatrices();
+        var notGateVertexBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, notGateVertexBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(notGateVerts), gl.STATIC_DRAW);
+        // console.log("orgates.length: " + orgates.length);
+        for (var k = 0; k < orgates.length; k++) {
+            // console.log("HERE J");
+            drawOrGate(k);
+            
         }
         //TEST MOVING PIECE
         /*  var notGateVertexBuffer = gl.createBuffer();
          gl.bindBuffer(gl.ARRAY_BUFFER, notGateVertexBuffer);
          gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(notGateVerts), gl.STATIC_DRAW);
- 
+     
          doAttribs();
          identityAllMatrices();
- 
+     
          if (mousepressed) {
              moveX = (lastX - 300) / 300;
              moveY = (300 - lastY) / 300;
