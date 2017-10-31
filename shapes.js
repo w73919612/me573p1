@@ -28,19 +28,34 @@ var selectorToolVerticesOff =
         0.5, -0.5, 0.02, 0, 0, 1
     ];
 
-var connectorToolVertices =
+var connectorToolVerticesOff =
     [
-        -0.75, 0.75, 0.02, rgbC[0], rgbC[1], rgbC[2],
-        -0.75, 1.0, 0.02, rgbC[0], rgbC[1], rgbC[2],
-        -1.0, 1.0, 0.02, rgbC[0], rgbC[1], rgbC[2],
-        -1.0, 0.75, 0.02, rgbC[0], rgbC[1], rgbC[2],
-        -0.75, 0.75, 0.02, rgbC[0], rgbC[1], rgbC[2],
+        -0.75, 0.75, 0.02, 0, 0, 1,
+        -0.75, 1.0, 0.02,  0, 0, 1,
+        -1.0, 1.0, 0.02,   0, 0, 1,
+        -1.0, 0.75, 0.02,  0, 0, 1,
+        -0.75, 0.75, 0.02, 0, 0, 1,
 
-        0.75, -0.75, 0.02, rgbC[0], rgbC[1], rgbC[2],
-        0.75, -1.0, 0.02, rgbC[0], rgbC[1], rgbC[2],
-        1.0, -1.0, 0.02, rgbC[0], rgbC[1], rgbC[2],
-        1.0, -0.75, 0.02, rgbC[0], rgbC[1], rgbC[2],
-        0.75, -0.75, 0.02, rgbC[0], rgbC[1], rgbC[2],
+        0.75, -0.75, 0.02, 0, 0, 1,
+        0.75, -1.0, 0.02,  0, 0, 1,
+        1.0, -1.0, 0.02,   0, 0, 1,
+        1.0, -0.75, 0.02,  0, 0, 1,
+        0.75, -0.75, 0.02, 0, 0, 1
+    ];
+
+    var connectorToolVerticesOn =
+    [
+        -0.75, 0.75, 0.02, 0, 0, 0,
+        -0.75, 1.0, 0.02,  0, 0, 0,
+        -1.0, 1.0, 0.02,   0, 0, 0,
+        -1.0, 0.75, 0.02,  0, 0, 0,
+        -0.75, 0.75, 0.02, 0, 0, 0,
+
+        0.75, -0.75, 0.02, 0, 0, 0,
+        0.75, -1.0, 0.02,  0, 0, 0,
+        1.0, -1.0, 0.02,   0, 0, 0,
+        1.0, -0.75, 0.02,  0, 0, 0,
+        0.75, -0.75, 0.02, 0, 0, 0
     ];
 
 var paletteBoxVertsOn =
@@ -113,6 +128,7 @@ var notGateVerts =
 
 var selectorToolOnData = Float32Array.from(selectorToolVerticesOn);
 var selectorToolOffData = Float32Array.from(selectorToolVerticesOff);
-var connectorToolData = Float32Array.from(connectorToolVertices);
+var connectorToolOnData = Float32Array.from(connectorToolVerticesOn);
+var connectorToolOffData = Float32Array.from(connectorToolVerticesOff);
 var orGateData = Float32Array.from(orGateVerts);
 var notGateData = Float32Array.from(notGateVerts);

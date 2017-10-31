@@ -8,31 +8,60 @@ var moveX = 0.0;
 var moveY = 0.0;
 mousepressed = false;
 
-const SELECT = 0;
-const CONNECT = 1;
+var SELECT = true;
+var CONNECT = false;
 const ORGATE = 2;
 const NOTGATE = 3;
 
-var selectedTool = SELECT;
+const MAXGATES = 5;
+var gateCount = 0;
+
+var selectedTool = {
+    mode: SELECT,
+    x: 0.0,
+    y: 0.0
+}
 
 var inPalette = function (screenX, screenY) {
     var selecting = false;
-    var tool = -1;
-    console.log("Screen X: " + Number(screenX).toFixed(2)  + 
-              ", Screen Y: " + Number(screenY).toFixed(2));
+    var tool = {
+        mode: -1,
+        x: 0.0,
+        y: 0.0
+    };
+
+    console.log("Screen(x,y): " + Number(screenX).toFixed(2) +
+        ", " + Number(screenY).toFixed(2));
     if (screenX < -0.65 && screenY > -.32) {
         selecting = true;
+        console.log("HERE E");
         if (screenY < 1.0 && screenY > .65) {
-            tool = SELECT;
+            console.log("HERE F");
+            SELECT = true;
+            CONNECT = false;
         }
         if (screenY < .65 && screenY > .32) {
-            tool = CONNECT;
+            console.log("HERE G");
+            SELECT = false;
+            CONNECT = true;
         }
         if (screenY < .32 && screenY > 0.0) {
-            tool = ORGATE;
+            console.log("HERE H");
+            tool.mode = ORGATE;
+            tool.x = screenX;
+            tool.y = screenY;
+            console.log("Pmode: " + tool.mode +
+                "\nPx: " + tool.x +
+                "\nPy: " + tool.y);
         }
         if (screenY < 0.0 && screenY > -.32) {
-            tool = NOTGATE;
+            console.log("HERE I");
+            tool.mode = NOTGATE;
+            tool.x = screenX;
+            tool.y = screenY;
+            console.log("Pmode: " + tool.mode +
+                "\nPx: " + tool.x +
+                "\nPy: " + tool.y);
         }
     }
     return tool;
@@ -43,17 +72,35 @@ var mousedown = function (canvas, evt) {
     var y = evt.clientY;
 
     selectedTool = inPalette((x - 300) / 300, (300 - y) / 300);
-    if (selectedTool != -1) {
-        if (selectedTool == SELECT) {
-            rgbS[0] = 0.0;
-            rgbS[1] = 0.0;
-            rgbS[2] = 0.0;
-        }
-    }
     lastX = x;
     lastY = y;
     console.log("Canvas(x,y): " + lastX + ",   " + lastY);
-    // loop()
+}
+
+
+var mouseup = function (canvas, evt) {
+
+    var x = evt.clientX;
+    var y = evt.clientY;
+
+    selectedTool = inPalette((x - 300) / 300, (300 - y) / 300);
+    if (SELECT) {
+        console.log("mode: " + selectedTool.mode +
+            "\nx: " + selectedTool.x +
+            "\ny: " + selectedTool.y);
+            console.log("LAST    X: " + lastX);
+        console.log("HERE A");
+        if (selectedTool.mode == ORGATE) {
+            console.log("HERE B");
+            if (lastX > 108) {
+                console.log("HERE C");
+                if (gateCount < MAXGATES) {
+                    console.log("HERE D");
+                    gateCount = gateCount + 1;
+                }
+            }
+        }
+    }
 }
 
 function getMousePos(canvas, evt) {
@@ -76,7 +123,6 @@ var initDemo = function () {
 
     canvas.addEventListener('mousedown', function (evt) {
         mousepressed = !mousepressed;
-        console.log("Mouse Down: " + mousepressed);
         mousedown(canvas, evt);
     }, false);
 
@@ -88,7 +134,7 @@ var initDemo = function () {
 
     canvas.addEventListener('mouseup', function (evt) {
         mousepressed = !mousepressed;
-        console.log("Mouse Down: " + mousepressed);
+        mouseup(canvas, evt);
         getMousePos(canvas, evt);
         moveX = (lastX - 300) / 300;
         moveY = (300 - lastY) / 300;
@@ -97,7 +143,6 @@ var initDemo = function () {
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     gl.enable(gl.DEPTH_TEST);
-
 
     var vertexShader = gl.createShader(gl.VERTEX_SHADER);
     gl.shaderSource(vertexShader, vertexShaderText);
@@ -123,23 +168,6 @@ var initDemo = function () {
     gl.validateProgram(program);
     if (!gl.getProgramParameter(program, gl.VALIDATE_STATUS)) {
         console.log("Bad Validating Program.");
-    }
-
-    function getBoxVerts(spx, spy, wid, loop) {
-        var set = [];
-        if (loop) {
-            set.push(spx, spy,
-                spx + wid, spy,
-                spx + wid, spy - wid,
-                spx, spy - wid);
-        }
-        else {
-            set.push(spx, spy,
-                spx + wid, spy,
-                spx + wid, spy - wid,
-                spx, spy - wid);
-        }
-        return set
     }
 
     var identityAllMatrices = function () {
@@ -194,6 +222,17 @@ var initDemo = function () {
         gl.drawArrays(gl.TRIANGLES, 0, boundingBoxNumVerts);
     }
 
+
+    var drawOrGate = function (multiplier) {
+
+        mat4.fromScaling(scaleMatrix, [.7 * bxScale, .6 * bxScale, bxScale]);
+        mat4.fromTranslation(translateMatrix, [moveX, moveY, 0]);
+        mat4.scalar.multiply(worldMatrix, rotateMatrix, scaleMatrix);
+        mat4.scalar.multiply(worldMatrix, translateMatrix, worldMatrix);
+        gl.uniformMatrix4fv(matWorldUniformLocation, gl.FALSE, worldMatrix);
+        gl.drawArrays(gl.LINE_STRIP, 0, notGateNumVerts);
+    }
+
     var doAttribs = function () {
 
         positionAttribLocation = gl.getAttribLocation(program, 'vertPosition');
@@ -221,7 +260,7 @@ var initDemo = function () {
         //PALETTE : BOUNDING BOX
         var boundingBoxVertexBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, boundingBoxVertexBuffer);
-        if (selectedTool == SELECT) {
+        if (SELECT) {
             gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(paletteBoxVertsOn), gl.STATIC_DRAW);
         }
         else {
@@ -230,20 +269,29 @@ var initDemo = function () {
 
         doAttribs();
         drawTransformDrawBoundingBox(6.00 / 6.0);
-
+        if (CONNECT) {
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(paletteBoxVertsOn), gl.STATIC_DRAW);
+        }
+        else {
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(paletteBoxVertsOff), gl.STATIC_DRAW);
+        }
         drawTransformDrawBoundingBox(4.05 / 6.0);
+
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(paletteBoxVertsOff), gl.STATIC_DRAW);
+
         drawTransformDrawBoundingBox(2.10 / 6.0);
         drawTransformDrawBoundingBox(0.15 / 6.0);
 
         //PALETTE : SELECTOR TOOL
         var selectorToolVertexBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, selectorToolVertexBuffer);
-        if (selectedTool == SELECT) {
+        if (SELECT) {
             gl.bufferData(gl.ARRAY_BUFFER, selectorToolOnData, gl.STATIC_DRAW);
         }
         else {
             gl.bufferData(gl.ARRAY_BUFFER, selectorToolOffData, gl.STATIC_DRAW);
         }
+
         doAttribs();
         identityAllMatrices();
 
@@ -257,7 +305,12 @@ var initDemo = function () {
         //PALETTE : CONNECTOR TOOL
         var connectorToolVertexBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, connectorToolVertexBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, connectorToolData, gl.STATIC_DRAW);
+        if (CONNECT) {
+            gl.bufferData(gl.ARRAY_BUFFER, connectorToolOnData, gl.STATIC_DRAW);
+        }
+        else {
+            gl.bufferData(gl.ARRAY_BUFFER, connectorToolOffData, gl.STATIC_DRAW);
+        }
 
         doAttribs();
         identityAllMatrices();
@@ -303,25 +356,34 @@ var initDemo = function () {
         gl.drawArrays(gl.LINE_STRIP, 0, notGateNumVerts);
 
 
-        //TEST MOVING PIECE
-        var notGateVertexBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, notGateVertexBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(notGateVerts), gl.STATIC_DRAW);
+        for (var k = 0; k < gateCount; k++) {
+            var notGateVertexBuffer = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, notGateVertexBuffer);
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(notGateVerts), gl.STATIC_DRAW);
 
+            doAttribs();
+            identityAllMatrices();
+            drawOrGate();
 
-        doAttribs();
-        identityAllMatrices();
-
-        if (mousepressed) {
-            moveX = (lastX - 300) / 300;
-            moveY = (300 - lastY) / 300;
         }
-        mat4.fromScaling(scaleMatrix, [.7 * bxScale, .6 * bxScale, bxScale]);
-        mat4.fromTranslation(translateMatrix, [moveX, moveY, 0]);
-        mat4.scalar.multiply(worldMatrix, rotateMatrix, scaleMatrix);
-        mat4.scalar.multiply(worldMatrix, translateMatrix, worldMatrix);
-        gl.uniformMatrix4fv(matWorldUniformLocation, gl.FALSE, worldMatrix);
-        gl.drawArrays(gl.LINE_STRIP, 0, notGateNumVerts);
+        //TEST MOVING PIECE
+        /*  var notGateVertexBuffer = gl.createBuffer();
+         gl.bindBuffer(gl.ARRAY_BUFFER, notGateVertexBuffer);
+         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(notGateVerts), gl.STATIC_DRAW);
+ 
+         doAttribs();
+         identityAllMatrices();
+ 
+         if (mousepressed) {
+             moveX = (lastX - 300) / 300;
+             moveY = (300 - lastY) / 300;
+         }
+         mat4.fromScaling(scaleMatrix, [.7 * bxScale, .6 * bxScale, bxScale]);
+         mat4.fromTranslation(translateMatrix, [moveX, moveY, 0]);
+         mat4.scalar.multiply(worldMatrix, rotateMatrix, scaleMatrix);
+         mat4.scalar.multiply(worldMatrix, translateMatrix, worldMatrix);
+         gl.uniformMatrix4fv(matWorldUniformLocation, gl.FALSE, worldMatrix);
+         gl.drawArrays(gl.LINE_STRIP, 0, notGateNumVerts);*/
         requestAnimationFrame(loop);
     };
     requestAnimationFrame(loop);
