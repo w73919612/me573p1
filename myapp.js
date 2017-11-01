@@ -17,6 +17,7 @@ const MAXGATES = 5;
 var gateCount = 0;
 
 var orgates = [];
+var notgates = [];
 
 var onlyPrintOnce = 0;
 
@@ -85,6 +86,14 @@ var mouseup = function (canvas, evt) {
             if (lastX > 108) {
                 if (gateCount < MAXGATES) {
                     orgates.push({ posx: lastX, posy: lastY });
+                    gateCount = gateCount + 1;
+                }
+            }
+        }
+        if (selectedTool.mode == NOTGATE) {
+            if (lastX > 108) {
+                if (gateCount < MAXGATES) {
+                    notgates.push({ posx: lastX, posy: lastY });
                     gateCount = gateCount + 1;
                 }
             }
@@ -236,10 +245,10 @@ var initDemo = function () {
     }
 
 
-    var drawOrGate = function (index) {
+    var drawGate = function (index, gates, numVerts) {
 
-        l_moveX = glX(mousepressed ? lastX : orgates[index].posx);
-        l_moveY = glY(mousepressed ? lastY : orgates[index].posy);
+        l_moveX = glX(mousepressed ? lastX : gates[index].posx);
+        l_moveY = glY(mousepressed ? lastY : gates[index].posy);
 
         if (onlyPrintOnce < 1) {
             onlyPrintOnce = onlyPrintOnce + 1;
@@ -249,7 +258,7 @@ var initDemo = function () {
         mat4.fromTranslation(translateMatrix, [l_moveX, l_moveY, 0.0]);
         mat4.scalar.multiply(worldMatrix, translateMatrix, scaleMatrix);
         gl.uniformMatrix4fv(matWorldUniformLocation, gl.FALSE, worldMatrix);
-        gl.drawArrays(gl.LINE_STRIP, 0, orGateNumVerts);
+        gl.drawArrays(gl.LINE_STRIP, 0, numVerts);
     }
 
     var doAttribs = function () {
@@ -359,7 +368,7 @@ var initDemo = function () {
 
         // Draw USER OR GATES
         for (var o = 0; o < orgates.length; o++) {
-            drawOrGate(o);
+            drawGate(o, orgates, orGateNumVerts);
         }
 
         //PALETTE : NOT GATE TOOL
@@ -387,7 +396,7 @@ var initDemo = function () {
         
         // Draw USER NOT GATES
         for (var n = 0; n < notgates.length; n++) {
-            drawNotGate(n);
+            drawGate(o, notgates, notGateNumVerts);
         }
 
         requestAnimationFrame(loop);
